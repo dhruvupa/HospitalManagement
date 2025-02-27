@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Patient Dashboard</title>
+</head>
+<body>
+<div class="dashboard-container">
+  <h2>Hello, <span th:text="${patient.firstName}"></span>!</h2>
+
+  <!-- Section: Book Appointment -->
+  <div class="section">
+    <h3>Book Appointment</h3>
+    <form th:action="@{/Patient/patient/bookAppointment}" method="post" onsubmit="return validateForm()">
+      <select name="doctorId" id="doctorId" required onchange="fetchTimeSlots()">
+        <option value="">Select Doctor</option>
+        <option th:each="doctor : ${doctors}" th:value="${doctor.id}" th:text="${doctor.firstName + ' ' + doctor.lastName + ' (' + doctor.specialization + ')'}"></option>
+      </select>
+      <div id="timeSlots" class="time-slot">
+        <!-- Time slots will be populated here -->
+      </div>
+      <input type="hidden" id="appointmentDate" name="timeSlot"> <!-- Hidden input for selected time slot -->
+      <div id="errorMessage" class="error-message"></div>
+      <button type="submit">Book Appointment</button>
+    </form>
+  </div>
+
+  <!-- Links to Other Pages -->
+  <div class="section">
+    <a th:href="@{/Patient/patient/updateDetails}">Update Your Details</a> |
+    <a th:href="@{/Patient/patient/viewAppointments}">View Your Appointments</a>
+  </div>
+</div>
+
+<script>
+  function fetchTimeSlots() {
+    const doctorId = document.getElementById('doctorId').value;
+    if (!doctorId) {
+        document.getElementById('timeSlots').innerHTML = '';
+        document.getElementById('appointmentDate').value = '';
+        return;
+    }
+
+    fetch(`/Patient/patient/getTimeSlots?doctorId=${doctorId}`)
+        .then(response => response.json())
+        .then(data => {
+            const timeSlotsDiv = document.getElementById('timeSlots');
+            timeSlotsDiv.innerHTML = '';
+
+            if (data.length === 0) {
+                timeSlotsDiv.innerHTML = '<p>No available time slots for this doctor.</p>';
+                document.getElementById('appointmentDate').value = '';
+            } else {
+                // Fetch booked slots for the selected doctor
+                fetch(`/Patient/patient/getBookedSlots?doctorId=${doctorId}`)
+                    .then(response => response.json())
+                    .then(bookedSlots => {
+                        data.forEach(slot => {
+                            const button = document.createElement('button');
+                            button.type = 'button';
+                            button.textContent = slot;
+
+                            // Disable the button if the slot is already booked
+                            if (bookedSlots.includes(slot)) {
+                                button.disabled = true;
+                                button.style.backgroundColor = '#ccc'; // Visual indication for disabled slots
+                            } else {
+                                button.onclick = () => selectTimeSlot(slot);
+                            }
+
+                            timeSlotsDiv.appendChild(button);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching booked slots:', error);
+                    });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching time slots:', error);
+            document.getElementById('timeSlots').innerHTML = '<p>Error fetching time slots. Please try again.</p>';
+        });
+}
+
+function selectTimeSlot(slot) {
+    const buttons = document.querySelectorAll('#timeSlots button');
+    buttons.forEach(button => button.classList.remove('selected'));
+    event.target.classList.add('selected');
+    document.getElementById('appointmentDate').value = slot; // Set the selected time slot
+    document.getElementById('errorMessage').textContent = '';
+}
+
+function validateForm() {
+    const doctorId = document.getElementById('doctorId').value;
+    const appointmentDate = document.getElementById('appointmentDate').value;
+
+    if (!doctorId) {
+        document.getElementById('errorMessage').textContent = 'Please select a doctor.';
+        return false;
+    }
+
+    if (!appointmentDate) {
+        document.getElementById('errorMessage').textContent = 'Please select a date and time.';
+        return false;
+    }
+
+    return true;
+}
+
+</script>
+</body>
+</html>

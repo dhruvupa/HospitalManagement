@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Doctor Registration</title>
+</head>
+<body>
+<div>
+  <h2>Doctor Registration</h2>
+  <form th:action="@{/Doctor/doctor/registerSuccess}" method="post">
+    <input type="text" name="firstName" placeholder="First Name" required>
+    <input type="text" name="lastName" placeholder="Last Name" required>
+    <input type="text" name="specialization" placeholder="Specialization" required>
+    <input type="text" name="contactInfo" placeholder="Contact Info" required>
+    <button type="submit">Register</button>
+  </form>
+  <div>
+    Already have an account? <a th:href="@{/Doctor/doctor/login}">Login here</a>
+  </div>
+</div>
+</body>
+</html>

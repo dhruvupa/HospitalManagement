@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Patient Login</title>
+</head>
+<body>
+<div>
+  <h2>Patient Login</h2>
+  <form th:action="@{/Patient/patient/loginSuccess}" method="post">
+    <input type="text" name="firstName" placeholder="First Name" required>
+    <input type="text" name="lastName" placeholder="Last Name" required>
+    <button type="submit">Login</button>
+  </form>
+  <div>
+    Don't have an account? <a th:href="@{/Patient/patient/register}">Register here</a>
+  </div>
+</div>
+</body>
+</html>

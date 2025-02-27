@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Doctor Login</title>
+</head>
+<body>
+<div>
+  <h2>Doctor Login</h2>
+  <form th:action="@{/Doctor/doctor/loginSuccess}" method="post">
+    <input type="text" name="firstName" placeholder="First Name" required>
+    <input type="text" name="lastName" placeholder="Last Name" required>
+    <button type="submit">Login</button>
+  </form>
+
+  <div th:if="${param.error}">
+    <p style="color: red;">Invalid name. Please try again.</p>
+  </div>
+
+  <div>
+    Don't have an account? <a th:href="@{/Doctor/doctor/register}">Register here</a>
+  </div>
+</div>
+</body>
+</html>

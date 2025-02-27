@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>View Appointments</title>
+  <style>
+    .appointment-card {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    .accepted {
+      background-color: #d4edda; /* Green for accepted */
+    }
+    .rejected {
+      background-color: #f8d7da; /* Red for rejected */
+    }
+    .completed {
+      background-color: #d1ecf1; /* Blue for completed */
+    }
+    .filter-btn {
+      margin-right: 10px;
+      text-decoration: none;
+      color: #007bff;
+    }
+    .filter-btn:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+<div class="dashboard-container">
+  <h2>Your Appointments</h2>
+
+  <!-- Filter Buttons -->
+  <div>
+    <a href="/Doctor/doctor/viewAppointments" class="filter-btn">Current Bookings</a>
+    <a href="/Doctor/doctor/viewAppointments?filter=past" class="filter-btn">Past Bookings</a>
+  </div>
+
+  <!-- Sub-filters for Past Bookings -->
+  <div th:if="${filter == 'past'}">
+    <a href="/Doctor/doctor/viewAppointments?filter=rejected" class="filter-btn">Rejected</a>
+    <a href="/Doctor/doctor/viewAppointments?filter=completed" class="filter-btn">Completed</a>
+  </div>
+
+  <!-- Appointment List -->
+  <div th:each="appointment : ${appointments}">
+    <div class="appointment-card"
+         th:classappend="${appointment.status == 'Accepted'} ? 'accepted' :
+                             (${appointment.status == 'Rejected'} ? 'rejected' :
+                             (${appointment.status == 'Completed'} ? 'completed' : ''))">
+      <p><strong>Patient:</strong> <span th:text="${appointment.patientName}"></span></p>
+      <p><strong>Doctor:</strong> <span th:text="${appointment.doctorName}"></span></p> <!-- Added doctor_name -->
+      <p><strong>Date & Time:</strong> <span th:text="${appointment.appointmentDate}"></span></p>
+      <p><strong>Status:</strong> <span th:text="${appointment.status}"></span></p>
+
+      <!-- Accept/Reject Buttons (only for pending appointments) -->
+      <div th:if="${appointment.status == 'scheduled'}">
+        <form th:action="@{/Doctor/doctor/acceptAppointment}" method="post" style="display: inline;">
+          <input type="hidden" name="appointmentId" th:value="${appointment.id}">
+          <button type="submit">Accept</button>
+        </form>
+        <form th:action="@{/Doctor/doctor/rejectAppointment}" method="post" style="display: inline;">
+          <input type="hidden" name="appointmentId" th:value="${appointment.id}">
+          <button type="submit">Reject</button>
+        </form>
+      </div>
+
+      <!-- Completed Button (only for accepted appointments) -->
+      <div th:if="${appointment.status == 'Accepted'}">
+        <form th:action="@{/Doctor/doctor/completeAppointment}" method="post" style="display: inline;">
+          <input type="hidden" name="appointmentId" th:value="${appointment.id}">
+          <button type="submit">Mark as Completed</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>View Appointments</title>
+  <style>
+    .appointment-list {
+      margin-top: 20px;
+    }
+    .appointment-item {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .action-buttons {
+      margin-top: 10px;
+    }
+    .error-message {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+<div class="dashboard-container">
+  <h2>Your Appointments</h2>
+
+  <div class="appointment-list">
+    <div th:each="appointment : ${appointments}" class="appointment-item">
+      <p><strong>Doctor:</strong> <span th:text="${appointment.doctorName}"></span></p>
+      <p><strong>Date & Time:</strong> <span th:text="${appointment.appointmentDate}"></span></p>
+      <p><strong>Status:</strong> <span th:text="${appointment.status}"></span></p>
+      <div class="action-buttons">
+        <form th:action="@{/Patient/patient/cancelAppointment}" method="post" style="display:inline;">
+          <input type="hidden" name="appointmentId" th:value="${appointment.id}">
+          <button type="submit">Cancel Appointment</button>
+        </form>
+        <button type="button" onclick="openRescheduleModal([[${appointment.id}]])">Reschedule Appointment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reschedule Modal -->
+  <div id="rescheduleModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeRescheduleModal()">&times;</span>
+      <h3>Reschedule Appointment</h3>
+      <form th:action="@{/Patient/patient/rescheduleAppointment}" method="post">
+        <input type="hidden" id="rescheduleAppointmentId" name="appointmentId">
+        <select id="rescheduleDoctorId" onchange="fetchRescheduleTimeSlots()" required>
+          <option value="">Select Doctor</option>
+          <option th:each="doctor : ${doctors}" th:value="${doctor.id}" th:text="${doctor.firstName + ' ' + doctor.lastName + ' (' + doctor.specialization + ')'}"></option>
+        </select>
+        <div id="rescheduleTimeSlots" class="time-slot">
+          <!-- Time slots will be populated here -->
+        </div>
+        <input type="hidden" id="rescheduleTimeSlot" name="newTimeSlot">
+        <div id="rescheduleErrorMessage" class="error-message"></div>
+        <button type="submit">Reschedule</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  function openRescheduleModal(appointmentId) {
+    document.getElementById('rescheduleAppointmentId').value = appointmentId;
+    document.getElementById('rescheduleModal').style.display = 'block';
+  }
+
+  function closeRescheduleModal() {
+    document.getElementById('rescheduleModal').style.display = 'none';
+  }
+
+  function fetchRescheduleTimeSlots() {
+    const doctorId = document.getElementById('rescheduleDoctorId').value;
+    if (!doctorId) {
+        document.getElementById('rescheduleTimeSlots').innerHTML = '';
+        document.getElementById('rescheduleTimeSlot').value = '';
+        return;
+    }
+
+    fetch(`/Patient/patient/getTimeSlots?doctorId=${doctorId}`)
+        .then(response => response.json())
+        .then(data => {
+            const timeSlotsDiv = document.getElementById('rescheduleTimeSlots');
+            timeSlotsDiv.innerHTML = '';
+
+            if (data.length === 0) {
+                timeSlotsDiv.innerHTML = '<p>No available time slots for this doctor.</p>';
+                document.getElementById('rescheduleTimeSlot').value = '';
+            } else {
+                data.forEach(slot => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.textContent = slot;
+                    button.onclick = () => selectRescheduleTimeSlot(slot);
+                    timeSlotsDiv.appendChild(button);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching time slots:', error);
+            document.getElementById('rescheduleTimeSlots').innerHTML = '<p>Error fetching time slots. Please try again.</p>';
+        });
+  }
+
+  function selectRescheduleTimeSlot(slot) {
+    const buttons = document.querySelectorAll('#rescheduleTimeSlots button');
+    buttons.forEach(button => button.classList.remove('selected'));
+    event.target.classList.add('selected');
+    document.getElementById('rescheduleTimeSlot').value = slot; // Set the selected time slot
+    document.getElementById('rescheduleErrorMessage').textContent = '';
+  }
+</script>
+</body>
+</html>

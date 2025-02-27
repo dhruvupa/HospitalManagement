@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Update Patient Details</title>
+  <style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        padding: 20px;
+    }
+    .container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    h2 {
+        color: #333;
+    }
+    input, select {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>Update Your Details</h2>
+  <form th:action="@{/Patient/patient/updateDetails}" method="post">
+    <input type="text" name="firstName" th:value="${patient.firstName}" placeholder="First Name" required>
+    <input type="text" name="lastName" th:value="${patient.lastName}" placeholder="Last Name" required>
+    <input type="date" name="dateOfBirth" th:value="${patient.dateOfBirth}" placeholder="Date of Birth" required>
+    <select name="gender" required>
+      <option th:selected="${patient.gender == 'Male'}">Male</option>
+      <option th:selected="${patient.gender == 'Female'}">Female</option>
+      <option th:selected="${patient.gender == 'Other'}">Other</option>
+    </select>
+    <input type="text" name="contactInfo" th:value="${patient.contactInfo}" placeholder="Contact Info" required>
+    <button type="submit">Update Details</button>
+  </form>
+  <a th:href="@{/Patient/patient/dashboard}">Back to Dashboard</a>
+</div>
+</body>
+</html>
