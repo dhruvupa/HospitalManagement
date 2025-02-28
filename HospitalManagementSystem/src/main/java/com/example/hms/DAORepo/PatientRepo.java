@@ -38,7 +38,6 @@ public class PatientRepo {
         }
     }
 
-
     public Patient findById(int id) {
         String sql = "SELECT * FROM patients WHERE id = ?";
         try {

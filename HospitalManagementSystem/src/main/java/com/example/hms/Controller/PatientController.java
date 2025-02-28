@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/Patient")
@@ -101,7 +102,11 @@ public class PatientController {
     }
 
     @GetMapping("/patient/viewAppointments")
-    public String viewAppointmentsPage(HttpSession session, Model model) {
+    public String viewAppointmentsPage(
+            @RequestParam(required = false) String filter,
+            HttpSession session,
+            Model model) {
+
         // Retrieve the patient from the session
         Patient patient = (Patient) session.getAttribute("loggedInPatient");
 
@@ -111,7 +116,25 @@ public class PatientController {
 
         // Fetch appointments for the logged-in patient
         List<Appointment> appointments = appointmentRepo.findByPatientId(patient.getId());
+
+        // Filter appointments based on the filter parameter
+        if (filter != null && filter.equals("past")) {
+            // Show only past bookings (statuses other than "scheduled" and "Accepted")
+            appointments = appointments.stream()
+                    .filter(appointment -> !appointment.getStatus().equals("scheduled")
+                            && !appointment.getStatus().equals("Accepted"))
+                    .collect(Collectors.toList());
+        } else {
+            // Show only "scheduled" and "Accepted" appointments by default
+            appointments = appointments.stream()
+                    .filter(appointment -> appointment.getStatus().equals("scheduled")
+                            || appointment.getStatus().equals("Accepted"))
+                    .collect(Collectors.toList());
+        }
+
+        // Add appointments and filter to the model
         model.addAttribute("appointments", appointments);
+        model.addAttribute("filter", filter);
 
         return "PatientViewAppointment";
     }
