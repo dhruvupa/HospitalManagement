@@ -8,10 +8,12 @@ import com.example.hms.DAORepo.DoctorRepo;
 import com.example.hms.DAORepo.AppointmentRepo;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -61,10 +63,20 @@ public class PatientController {
         // Redirect to login page
     }
 
-    @PostMapping("/patient/registerSuccess")
-    public String handlePatientRegistration(Patient patient) {
+   /* @PostMapping("/patient/registerSuccess")
+    public void handlePatientRegistration(Patient patient) {
         patientRepo.save(patient);
-        return "redirect:/Patient/patient/login";
+        //return "redirect:/Patient/patient/login";
+    }*/
+    
+    @PostMapping("/patient/registerSuccess")
+    public ResponseEntity<String> handlePatientRegistration(@RequestBody Patient patient) {
+        try {
+            patientRepo.save(patient);
+            return ResponseEntity.ok("Registration Successful");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Registration Failed: " + e.getMessage());
+        }
     }
 
 

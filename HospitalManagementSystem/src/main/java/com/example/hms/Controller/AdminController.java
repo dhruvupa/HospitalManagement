@@ -11,7 +11,7 @@ public class AdminController {
     // Patient Login Page
     @GetMapping("/patient/login")
     public String patientLogin() {
-        return "patient-login";
+        return "patientLogin";
     }
 
     // Doctor Login Page
