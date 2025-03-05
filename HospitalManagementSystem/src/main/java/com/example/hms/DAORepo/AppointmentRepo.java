@@ -59,7 +59,7 @@ public class AppointmentRepo {
     }
 
     public void updateStatus(Long appointmentId, String status) {
-        String sql = "UPDATE appointments SET status = CAST(? AS CHAR) WHERE id = ?";
+        String sql = "UPDATE appointments SET status = ? WHERE id = ?";
         jdbcTemplate.update(sql, status, appointmentId);
     }
 
@@ -67,7 +67,7 @@ public class AppointmentRepo {
         String sql = "SELECT a.id, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN patients p ON a.patient_id = p.id " +
-                "JOIN doctors d ON a.doctor_id = d.id " + // Add this line
+                "JOIN doctors d ON a.doctor_id = d.id " +
                 "WHERE a.doctor_id = ? AND a.status IN ('Scheduled', 'Accepted')";
 
         return jdbcTemplate.query(sql, new Object[]{doctorId}, new AppointmentRowMapper());
