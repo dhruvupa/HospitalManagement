@@ -5,27 +5,26 @@ import com.example.hms.Model.Doctor.Doctor;
 import com.example.hms.Model.Appointment.Appointment;
 import com.example.hms.DAORepo.PatientRepo;
 import com.example.hms.DAORepo.DoctorRepo;
+import com.example.hms.DAORepo.LoginRequest;
 import com.example.hms.DAORepo.AppointmentRepo;
+import com.example.hms.config.PatientSessionService; // Add this import
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
-@RequestMapping("/Patient")
+@RequestMapping("/patient")
 public class PatientController {
     @Autowired
     private PatientRepo patientRepo;
@@ -36,141 +35,128 @@ public class PatientController {
     @Autowired
     private AppointmentRepo appointmentRepo;
 
-    @GetMapping("/patient/login")
+    @Autowired
+    private PatientSessionService patientSessionService; // Add this
+
+    // Login and Registration Endpoints
+    @GetMapping("/login")
     public String patientLogin() {
         return "PatientLogin";
     }
 
-    @GetMapping("/patient/register")
+    @GetMapping("/register")
     public String patientRegister() {
         return "PatientRegistration";
     }
 
-    @PostMapping("/patient/loginSuccess")
-    public String handlePatientLogin(String firstName, String lastName, HttpSession session) {
-        Patient patient = patientRepo.findByFirstNameAndLastName(firstName, lastName);
+    @PostMapping("/loginSuccess")
+    public ResponseEntity<?> handlePatientLogin(@RequestBody LoginRequest loginRequest, HttpSession session) {
+        Patient patient = patientRepo.findByFirstNameAndLastName(loginRequest.getFirstName(), loginRequest.getLastName());
         if (patient != null) {
-            session.setAttribute("loggedInPatient", patient);
-            return "redirect:/Patient/patient/dashboard";
+            patientSessionService.setLoggedInPatient(patient); // Use PatientSessionService
+            System.out.println("Session in /loginSuccess: " + session.getId());
+            return ResponseEntity.ok(Map.of("message", "Login successful", "patient", patient));
         }
-        return "redirect:/Patient/patient/login";
+        return ResponseEntity.status(401).body("{\"message\": \"Invalid credentials\"}");
     }
 
-    @PostMapping("/patient/logout")
-    public String handleLogout(HttpSession session) {
+    @PostMapping("/logout")
+    public ResponseEntity<?> handleLogout(HttpSession session) {
         session.invalidate(); // Invalidate the session
-        return "redirect:/Patient/patient/login";
-        // Redirect to login page
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
-   /* @PostMapping("/patient/registerSuccess")
-    public void handlePatientRegistration(Patient patient) {
-        patientRepo.save(patient);
-        //return "redirect:/Patient/patient/login";
-    }*/
-    
-    @PostMapping("/patient/registerSuccess")
+    @PostMapping("/registerSuccess")
     public ResponseEntity<String> handlePatientRegistration(@RequestBody Patient patient) {
         try {
             patientRepo.save(patient);
             return ResponseEntity.ok("Registration Successful");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Registration Failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Registration Failed: " + e.getMessage());
         }
     }
 
-
-
-    @GetMapping("/patient/dashboard")
-    public String patientDashboard(HttpSession session, Model model) {
-        // Retrieve the doctor from session
-        Patient patient = (Patient) session.getAttribute("loggedInPatient");
-
+    // Dashboard Endpoint
+    @GetMapping("/dashboard")
+    public ResponseEntity<?> patientDashboard(HttpSession session) {
+        Patient patient = patientSessionService.getLoggedInPatient(); // Use PatientSessionService
         if (patient == null) {
-            return "redirect:/Patient/patient/login"; // Redirect to login if no session
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
-
 
         List<Doctor> doctors = doctorRepo.findAll();
-        model.addAttribute("doctors", doctors);
-
-        // Pass doctor data to the model
-        model.addAttribute("patient", patient);
-        return "PatientDashboard"; // Render dashboard with doctor details
+        return ResponseEntity.ok(Map.of("patient", patient, "doctors", doctors));
     }
 
-    @GetMapping("/patient/updateDetails")
-    public String updatePatientDetailsPage(Model model) {
+    // Update Patient Details Endpoints
+    @GetMapping("/updateDetails")
+    public ResponseEntity<?> updatePatientDetailsPage() {
         int patientId = 1; // Example patient ID
         Patient patient = patientRepo.findById(patientId);
-        model.addAttribute("patient", patient);
-        return "UpdatePatientDetails";
-    }
-
-    @PostMapping("/patient/updateDetails")
-    public String updatePatientDetails(Patient patient) {
-        patientRepo.update(patient);
-        return "redirect:/Patient/patient/dashboard";
-    }
-
-    @GetMapping("/patient/viewAppointments")
-    public String viewAppointmentsPage(
-            @RequestParam(required = false) String filter,
-            HttpSession session,
-            Model model) {
-
-        // Retrieve the patient from the session
-        Patient patient = (Patient) session.getAttribute("loggedInPatient");
-
         if (patient == null) {
-            return "redirect:/Patient/patient/login"; // Redirect to login if no session
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Patient not found"));
+        }
+        return ResponseEntity.ok(patient);
+    }
+
+    @PostMapping("/updateDetails")
+    public ResponseEntity<?> updatePatientDetails(@RequestBody Patient patient) {
+        try {
+            patientRepo.update(patient);
+            return ResponseEntity.ok(Map.of("message", "Patient details updated successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Failed to update patient details"));
+        }
+    }
+
+    // View Appointments Endpoint
+    @GetMapping("/viewAppointments")
+    public ResponseEntity<?> viewAppointmentsPage(
+            @RequestParam(required = false) String filter,
+            HttpSession session) {
+
+        Patient patient = patientSessionService.getLoggedInPatient(); // Use PatientSessionService
+        if (patient == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
 
-        // Fetch appointments for the logged-in patient
         List<Appointment> appointments = appointmentRepo.findByPatientId(patient.getId());
 
-        // Filter appointments based on the filter parameter
         if (filter != null && filter.equals("past")) {
-            // Show only past bookings (statuses other than "scheduled" and "Accepted")
             appointments = appointments.stream()
                     .filter(appointment -> !appointment.getStatus().equals("scheduled")
                             && !appointment.getStatus().equals("Accepted"))
                     .collect(Collectors.toList());
         } else {
-            // Show only "scheduled" and "Accepted" appointments by default
             appointments = appointments.stream()
                     .filter(appointment -> appointment.getStatus().equals("scheduled")
                             || appointment.getStatus().equals("Accepted"))
                     .collect(Collectors.toList());
         }
 
-        // Add appointments and filter to the model
-        model.addAttribute("appointments", appointments);
-        model.addAttribute("filter", filter);
-
-        return "PatientViewAppointment";
+        return ResponseEntity.ok(Map.of("appointments", appointments, "filter", filter));
     }
 
-    @GetMapping("/patient/getBookedSlots")
+    // Fetch Booked Slots Endpoint
+    @GetMapping("/getBookedSlots")
     @ResponseBody
-    public List<String> getBookedSlots(@RequestParam int doctorId) {
-        return appointmentRepo.findBookedSlotsByDoctorId(doctorId);
+    public ResponseEntity<?> getBookedSlots(@RequestParam int doctorId) {
+        List<String> bookedSlots = appointmentRepo.findBookedSlotsByDoctorId(doctorId);
+        return ResponseEntity.ok(bookedSlots);
     }
 
-    @GetMapping("/patient/getTimeSlots")
+    // Fetch Available Time Slots Endpoint
+    @GetMapping("/getTimeSlots")
     @ResponseBody
-    public List<String> getTimeSlots(@RequestParam int doctorId) {
-        // Fetch doctor's shift timings
+    public ResponseEntity<?> getTimeSlots(@RequestParam int doctorId) {
         Doctor doctor = doctorRepo.findById(doctorId);
         if (doctor == null) {
-            return new ArrayList<>(); // Return empty list if doctor not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Doctor not found"));
         }
 
-        // Fetch booked slots for the doctor
         List<String> bookedSlots = appointmentRepo.findBookedSlotsByDoctorId(doctorId);
-
-        // Generate all slots and exclude booked ones
-        return generateTimeSlots(doctor.getShiftStart(), doctor.getShiftEnd(), bookedSlots);
+        List<String> timeSlots = generateTimeSlots(doctor.getShiftStart(), doctor.getShiftEnd(), bookedSlots);
+        return ResponseEntity.ok(timeSlots);
     }
 
     private List<String> generateTimeSlots(String shiftStart, String shiftEnd, List<String> bookedSlots) {
@@ -189,41 +175,44 @@ public class PatientController {
         return slots;
     }
 
-    @GetMapping("/patient/getShiftEnd")
-    @ResponseBody
-    public String getShiftEnd(@RequestParam int doctorId) {
-        Doctor doctor = doctorRepo.findById(doctorId);
-        return (doctor != null) ? doctor.getShiftEnd() : "";
-    }
-
-
-    @PostMapping("/patient/bookAppointment")
-    public String bookAppointment(@RequestParam int doctorId, @RequestParam String timeSlot, HttpSession session) {
-        Patient patient = (Patient) session.getAttribute("loggedInPatient");
+    // Book Appointment Endpoint
+    @PostMapping("/bookAppointment")
+    public ResponseEntity<?> bookAppointment(@RequestParam int doctorId, @RequestParam String timeSlot, HttpSession session) {
+        Patient patient = patientSessionService.getLoggedInPatient();
         if (patient == null) {
-            return "redirect:/Patient/patient/login";
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
+
+        System.out.println("Booking Appointment - Doctor ID: " + doctorId); // Debugging
+        System.out.println("Booking Appointment - Time Slot: " + timeSlot); // Debugging
 
         try {
             LocalDateTime appointmentDate = parseTimeSlot(timeSlot);
+            System.out.println("Parsed Appointment Date: " + appointmentDate); // Debugging
+
             Appointment appointment = new Appointment();
             appointment.setPatientId((long) patient.getId());
             appointment.setDoctorId((long) doctorId);
             appointment.setAppointmentDate(appointmentDate);
-            appointment.setStatus("scheduled"); // Ensure status is set to "Scheduled"
-            appointmentRepo.save(appointment);
+            appointment.setStatus("scheduled");
 
-            return "redirect:/Patient/patient/dashboard?success=true";
+            appointmentRepo.save(appointment);
+            System.out.println("Appointment Saved Successfully"); // Debugging
+
+            return ResponseEntity.ok(Map.of("message", "Appointment booked successfully"));
         } catch (Exception e) {
-            e.printStackTrace();
-            return "redirect:/Patient/patient/dashboard?error=Booking failed";
+            System.err.println("Error booking appointment: " + e.getMessage()); // Debugging
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Booking failed: " + e.getMessage()));
         }
     }
 
     private LocalDateTime parseTimeSlot(String timeSlot) {
-        // Example timeSlot format: "10:00 - 10:30"
-        String startTime = timeSlot.split(" - ")[0]; // Extract the start time
-        LocalTime time = LocalTime.parse(startTime); // Parse the start time
-        return LocalDateTime.now().with(time); // Combine with the current date
+        try {
+            String startTime = timeSlot.split(" - ")[0]; // Extract the start time
+            LocalTime time = LocalTime.parse(startTime); // Parse the start time
+            return LocalDateTime.now().with(time); // Combine with the current date
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid time slot format: " + timeSlot);
+        }
     }
 }
