@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -50,20 +49,6 @@ public class DoctorController {
         doctorRepo.save(doctor);
         return "redirect:/Doctor/doctor/login"; // Redirect to login after registration
     }
-
-   /* @PostMapping("/doctor/loginSuccess")
-    public String handleDoctorLogin(String firstName, String lastName, HttpSession session) {
-        Doctor doctor = doctorRepo.findByFirstNameAndLastName(firstName, lastName);
-
-        if (doctor != null) {
-            session.setAttribute("loggedInDoctor", doctor);
-            System.out.println("Login successful for Doctor: " + doctor.getFirstName());
-            return "redirect:/Doctor/doctor/dashboard"; // Redirects to the working page
-        }
-
-        System.out.println("Login failed. Redirecting back to login page.");
-        return "redirect:/Doctor/doctor/login?error=true";
-    }*/
     
     @PostMapping("/loginSuccess")
     public ResponseEntity<?> handleDoctorLogin(@RequestBody LoginRequest loginRequest, HttpSession session) {
@@ -77,86 +62,35 @@ public class DoctorController {
         return ResponseEntity.status(401).body("{\"message\": \"Invalid credentials\"}");
     }
     
-/*
     @PostMapping("/updateShift")
-    public String updateShiftTimings(String shiftStart, String shiftEnd, HttpSession session) {
-        Doctor doctor = (Doctor) session.getAttribute("loggedInDoctor");
+    public ResponseEntity<?> updateShiftTimings(@RequestBody Map<String, String> shiftData, HttpSession session) {
+        String shiftStart = shiftData.get("shiftStart");
+        String shiftEnd = shiftData.get("shiftEnd");
 
-        if (doctor != null) {
-            doctorRepo.updateShift(doctor.getId(), shiftStart, shiftEnd);
-            doctor.setShiftStart(shiftStart);
-            doctor.setShiftEnd(shiftEnd);
-            session.setAttribute("loggedInDoctor", doctor);
-        }
-
-        return "redirect:/Doctor/doctor/dashboard"; // Redirect to dashboard after update
-    }
-
-    @PostMapping("/logout")
-    public String handleLogout(HttpSession session) {
-        session.invalidate(); // Invalidate the session
-        return "redirect:/Doctor/doctor/login";
-        // Redirect to login page
-    }
-
-
-
-    @GetMapping("/dashboard")
-    public String doctorDashboard(HttpSession session, Model model) {
-        // Retrieve the doctor from session
-        Doctor doctor = (Doctor) session.getAttribute("loggedInDoctor");
+        Doctor doctor = doctorSessionService.getLoggedInDoctor();
 
         if (doctor == null) {
-            return "redirect:/Doctor/doctor/login"; // Redirect to login if no session
+        	 return ResponseEntity.status(401).body("{\"message\": \"No Doctor Data Found\"}");
         }
 
-        // Pass doctor data to the model
-        model.addAttribute("doctor", doctor);
-        return "DoctorDashboard"; // Render dashboard with doctor details
-    }
-
-    @GetMapping("/viewAppointments")
-    public String viewAppointments(@RequestParam(required = false) String filter, HttpSession session, Model model) {
-        Doctor doctor = (Doctor) session.getAttribute("loggedInDoctor");
-
-        List<Appointment> appointments;
-
-        if ("past".equalsIgnoreCase(filter)) {
-            appointments = appointmentRepo.findPastAppointments(doctor.getId());
-        } else if ("rejected".equalsIgnoreCase(filter)) {
-            appointments = appointmentRepo.findRejectedAppointments(doctor.getId());
-        } else if ("completed".equalsIgnoreCase(filter)) {
-            appointments = appointmentRepo.findCompletedAppointments(doctor.getId());
-        } else {
-            appointments = appointmentRepo.findCurrentAppointments(doctor.getId());
+        // Validate shift timings (optional)
+        if (!isValidTimeFormat(shiftStart) || !isValidTimeFormat(shiftEnd)) {
+        	 return ResponseEntity.status(401).body("{\"message\": \"Invalid Time\"}");
         }
 
-        model.addAttribute("appointments", appointments);
-        model.addAttribute("filter", filter);
-        return "DoctorViewAppointment";
+        doctorRepo.updateShift(doctor.getId(), shiftStart, shiftEnd);
+        doctor.setShiftStart(shiftStart);
+        doctor.setShiftEnd(shiftEnd);
+        session.setAttribute("loggedInDoctor", doctor);
+
+        return ResponseEntity.ok(Map.of("message", "Sift updated successfully"));
     }
 
-
-    @PostMapping("/acceptAppointment")
-    public String acceptAppointment(@RequestParam Long appointmentId) {
-        // Update the appointment status to "Accepted"
-        appointmentRepo.updateStatus(appointmentId, "Accepted");
-        return "redirect:/Doctor/doctor/viewAppointments";
+    // Example validation method
+    private boolean isValidTimeFormat(String time) {
+        return time.matches("([01]\\d|2[0-3]):[0-5]\\d"); // Validates HH:mm format
     }
 
-    @PostMapping("/rejectAppointment")
-    public String rejectAppointment(@RequestParam Long appointmentId) {
-        // Update the appointment status to "Rejected"
-        appointmentRepo.updateStatus(appointmentId, "Rejected");
-        return "redirect:/Doctor/doctor/viewAppointments";
-    }
-
-    @PostMapping("/completeAppointment")
-    public String completeAppointment(@RequestParam Long appointmentId) {
-        // Update the appointment status to "Completed"
-        appointmentRepo.updateStatus(appointmentId, "Completed");
-        return "redirect:/Doctor/doctor/viewAppointments";
-    }*/
     
     @PostMapping("/logout")
     public ResponseEntity<?> handleLogout(HttpSession session) {
