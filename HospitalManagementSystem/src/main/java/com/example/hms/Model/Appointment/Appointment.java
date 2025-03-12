@@ -1,5 +1,7 @@
 package com.example.hms.Model.Appointment;
 
+import com.example.hms.Model.Nurse.Nurse;
+
 import java.time.LocalDateTime;
 
 public class Appointment {
@@ -10,8 +12,27 @@ public class Appointment {
     private String status; // scheduled, completed, cancelled
     private String doctorName; // Additional field for doctor's name
     private String patientName;
+    private Nurse nurse;
 
-    // Getters and Setters
+    public String getDoctorComment() {
+        return doctorComment;
+    }
+
+    public void setDoctorComment(String doctorComment) {
+        this.doctorComment = doctorComment;
+    }
+
+    private String doctorComment;
+
+    public Nurse getNurse() {
+        return nurse;
+    }
+
+
+    public void setNurse(Nurse nurse) {
+        this.nurse = nurse;
+    }
+
     public Long getId() {
         return id;
     }

@@ -1,11 +1,11 @@
 package com.example.hms.Controller;
+import java.util.Optional;
 
+import com.example.hms.DAORepo.*;
 import com.example.hms.Model.Appointment.Appointment;
 import com.example.hms.Model.Doctor.Doctor;
+import com.example.hms.Model.Nurse.Nurse;
 import com.example.hms.config.DoctorSessionService;
-import com.example.hms.DAORepo.DoctorRepo;
-import com.example.hms.DAORepo.LoginRequest;
-import com.example.hms.DAORepo.AppointmentRepo;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
+import org.springframework.web.bind.annotation.RequestBody;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +32,15 @@ public class DoctorController {
     
     @Autowired
     private DoctorSessionService doctorSessionService;
+
+    @Autowired
+    private NurseRepo nurseRepo;
+
+    @Autowired
+    private DoctorNotesRepo doctorNotesRepo;
+
+    @Autowired
+    private NurseTaskRepo nurseTaskRepo;
 
     @GetMapping("/login")
     public String doctorLogin() {
@@ -166,5 +175,44 @@ public class DoctorController {
         appointmentRepo.updateStatus(appointmentId, "Completed");
         return ResponseEntity.ok(Map.of("message", "Appointment marked as completed"));
     }
-    
+
+    @PostMapping("/assignNurseAndComment")
+    public ResponseEntity<?> assignNurseAndComment(@RequestBody Map<String, Object> requestData) {
+        System.out.println("Received Request Data: " + requestData); // Debugging log
+
+        // Check if all required fields are present
+        if (!requestData.containsKey("patientId") || !requestData.containsKey("nurseId") || !requestData.containsKey("comment")) {
+            System.out.println("Missing required fields in request!");
+            return ResponseEntity.badRequest().body(Map.of("message", "Missing required fields"));
+        }
+
+        try {
+            int patientId = Integer.parseInt(requestData.get("patientId").toString()); // Ensure int usage
+            int nurseId = Integer.parseInt(requestData.get("nurseId").toString()); // Ensure int usage
+            String comment = requestData.get("comment").toString();
+
+            System.out.println("Extracted Data: patientId=" + patientId + ", nurseId=" + nurseId + ", comment=" + comment);
+
+            Optional<Nurse> nurseOpt = nurseRepo.findById(nurseId); // Now correctly using int
+
+            // Check if patient exists in the database
+            boolean patientExists = !appointmentRepo.findByPatientId(patientId).isEmpty();
+
+            if (patientExists && nurseOpt.isPresent()) {
+                Nurse nurse = nurseOpt.get();
+
+                // Store the doctor's comment in nurse_task table
+                nurseTaskRepo.createTask(nurseId, patientId, comment); // Using int values
+
+                return ResponseEntity.ok(Map.of("message", "Nurse assigned and comment saved successfully!"));
+            } else {
+                System.out.println("Invalid patient or nurse ID!");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Invalid patient or nurse ID"));
+            }
+        } catch (Exception e) {
+            System.out.println("Error processing request: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Error processing request"));
+        }
+    }
+
 }

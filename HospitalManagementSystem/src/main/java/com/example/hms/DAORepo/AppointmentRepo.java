@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class AppointmentRepo {
@@ -101,6 +102,22 @@ public class AppointmentRepo {
                 "WHERE a.doctor_id = ? AND a.status = 'Completed'";
 
         return jdbcTemplate.query(sql, new Object[]{doctorId}, new AppointmentRowMapper());
+    }
+
+    // In AppointmentRepo.java
+    public void assignNurse(Long appointmentId, Integer nurseId) {
+        String sql = "UPDATE appointments SET nurse_id = ? WHERE id = ?";
+        jdbcTemplate.update(sql, nurseId, appointmentId);
+    }
+
+    public Optional<Appointment> findById(Long appointmentId) {
+        String sql = "SELECT * FROM appointments WHERE id = ?";
+        try {
+            Appointment appointment = jdbcTemplate.queryForObject(sql, new Object[]{appointmentId}, new AppointmentRowMapper());
+            return Optional.ofNullable(appointment);
+        } catch (Exception e) {
+            return Optional.empty(); // Return an empty Optional if no appointment is found
+        }
     }
 
     private static class AppointmentRowMapper implements RowMapper<Appointment> {
