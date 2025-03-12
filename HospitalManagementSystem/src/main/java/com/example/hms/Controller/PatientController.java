@@ -124,17 +124,17 @@ public class PatientController {
 
         if (filter != null && filter.equals("past")) {
             appointments = appointments.stream()
-                    .filter(appointment -> !appointment.getStatus().equals("scheduled")
-                            && !appointment.getStatus().equals("Accepted"))
+                    .filter(appointment -> !appointment.getStatus().equalsIgnoreCase("scheduled")
+                            && !appointment.getStatus().equalsIgnoreCase("Accepted"))
                     .collect(Collectors.toList());
         } else {
             appointments = appointments.stream()
-                    .filter(appointment -> appointment.getStatus().equals("scheduled")
-                            || appointment.getStatus().equals("Accepted"))
+                    .filter(appointment -> appointment.getStatus().equalsIgnoreCase("scheduled")
+                            || appointment.getStatus().equalsIgnoreCase("Accepted"))
                     .collect(Collectors.toList());
         }
 
-        return ResponseEntity.ok(Map.of("appointments", appointments, "filter", filter));
+        return ResponseEntity.ok(Map.of("appointments", appointments));
     }
 
     // Fetch Booked Slots Endpoint
@@ -215,4 +215,49 @@ public class PatientController {
             throw new IllegalArgumentException("Invalid time slot format: " + timeSlot);
         }
     }
+    
+    @PostMapping("/cancelAppointment")
+    public ResponseEntity<?> cancelAppointment(@RequestParam Long appointmentId, HttpSession session) {
+        Patient patient = patientSessionService.getLoggedInPatient();
+        if (patient == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        try {
+            Appointment appointment = appointmentRepo.findById(appointmentId);
+            if (appointment == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Appointment not found"));
+            }
+
+            appointmentRepo.updateStatus(appointmentId,"Cancelled");
+            return ResponseEntity.ok(Map.of("message", "Appointment cancelled successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Failed to cancel appointment"));
+        }
+    }
+    
+    @PostMapping("/rescheduleAppointment")
+    public ResponseEntity<?> rescheduleAppointment(@RequestParam Long appointmentId, @RequestParam String newTimeSlot, HttpSession session) {
+        Patient patient = patientSessionService.getLoggedInPatient();
+        if (patient == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        try {
+            Appointment appointment = appointmentRepo.findById(appointmentId);
+            if (appointment == null ) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Appointment not found"));
+            }
+
+            LocalDateTime newAppointmentDate = parseTimeSlot(newTimeSlot);
+            //appointment.setAppointmentDate(newAppointmentDate);
+            //appointment.setStatus("Rescheduled");
+            appointmentRepo.updateSlot(appointmentId, newAppointmentDate);
+            return ResponseEntity.ok(Map.of("message", "Appointment rescheduled successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Failed to reschedule appointment"));
+        }
+    }
+    
+    
 }

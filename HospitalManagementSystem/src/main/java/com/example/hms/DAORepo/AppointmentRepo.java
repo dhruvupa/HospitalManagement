@@ -10,6 +10,7 @@ import java.util.ArrayList;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,7 +22,7 @@ public class AppointmentRepo {
 
 
     public List<Appointment> findByPatientId(int patientId) {
-        String sql = "SELECT a.id, d.first_name AS doctor_name, p.first_name AS patient_name, a.appointment_date, a.status " +
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, d.first_name AS doctor_name, p.first_name AS patient_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN doctors d ON a.doctor_id = d.id " +
                 "JOIN patients p ON a.patient_id = p.id " + // Add this line
@@ -51,7 +52,7 @@ public class AppointmentRepo {
     }
 
     public List<Appointment> findByDoctorId(Long doctorId) {
-        String sql = "SELECT a.id, p.first_name AS patient_name, a.appointment_date, a.status " +
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN patients p ON a.patient_id = p.id " +
                 "WHERE a.doctor_id = ? AND a.status NOT IN ('Completed', 'Rejected')";
@@ -63,9 +64,15 @@ public class AppointmentRepo {
         String sql = "UPDATE appointments SET status = ? WHERE id = ?";
         jdbcTemplate.update(sql, status, appointmentId);
     }
+    
+    public void updateSlot(Long appointmentId, LocalDateTime newSlots) {
+        String sql = "UPDATE appointments SET appointment_date = ? WHERE id = ?";
+        jdbcTemplate.update(sql, newSlots, appointmentId);
+    }
+
 
     public List<Appointment> findCurrentAppointments(Long doctorId) {
-        String sql = "SELECT a.id, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN patients p ON a.patient_id = p.id " +
                 "JOIN doctors d ON a.doctor_id = d.id " +
@@ -75,7 +82,7 @@ public class AppointmentRepo {
     }
 
     public List<Appointment> findPastAppointments(Long doctorId) {
-        String sql = "SELECT a.id, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN patients p ON a.patient_id = p.id " +
                 "JOIN doctors d ON a.doctor_id = d.id " + // Add this line
@@ -85,7 +92,7 @@ public class AppointmentRepo {
     }
 
     public List<Appointment> findRejectedAppointments(Long doctorId) {
-        String sql = "SELECT a.id, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN patients p ON a.patient_id = p.id " +
                 "JOIN doctors d ON a.doctor_id = d.id " + // Add this line
@@ -95,7 +102,7 @@ public class AppointmentRepo {
     }
 
     public List<Appointment> findCompletedAppointments(Long doctorId) {
-        String sql = "SELECT a.id, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN patients p ON a.patient_id = p.id " +
                 "JOIN doctors d ON a.doctor_id = d.id " + // Add this line
@@ -110,7 +117,7 @@ public class AppointmentRepo {
         jdbcTemplate.update(sql, nurseId, appointmentId);
     }
 
-    public Optional<Appointment> findById(Long appointmentId) {
+   /* public Optional<Appointment> findById(Long appointmentId) {
         String sql = "SELECT * FROM appointments WHERE id = ?";
         try {
             Appointment appointment = jdbcTemplate.queryForObject(sql, new Object[]{appointmentId}, new AppointmentRowMapper());
@@ -119,6 +126,7 @@ public class AppointmentRepo {
             return Optional.empty(); // Return an empty Optional if no appointment is found
         }
     }
+    */
 
     private static class AppointmentRowMapper implements RowMapper<Appointment> {
         @Override
@@ -129,7 +137,24 @@ public class AppointmentRepo {
             appointment.setPatientName(rs.getString("patient_name")); // Now available
             appointment.setAppointmentDate(rs.getTimestamp("appointment_date").toLocalDateTime());
             appointment.setStatus(rs.getString("status"));
+            appointment.setDoctorId(rs.getLong("doctorId"));
             return appointment;
         }
     }
+    
+    public Appointment findById(Long appointmentId) {
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, d.first_name AS doctor_name, p.first_name AS patient_name, a.appointment_date, a.status " +
+                "FROM appointments a " +
+                "JOIN doctors d ON a.doctor_id = d.id " +
+                "JOIN patients p ON a.patient_id = p.id " +
+                "WHERE a.id = ?";
+
+        try {
+            return jdbcTemplate.queryForObject(sql, new Object[]{appointmentId}, new AppointmentRowMapper());
+        } catch (Exception e) {
+            // If no appointment is found, return null
+            return null;
+        }
+    }
+    
 }
