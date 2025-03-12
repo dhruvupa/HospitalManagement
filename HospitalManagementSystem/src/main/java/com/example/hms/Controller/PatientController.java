@@ -245,19 +245,22 @@ public class PatientController {
 
         try {
             Appointment appointment = appointmentRepo.findById(appointmentId);
-            if (appointment == null ) {
+            if (appointment == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Appointment not found"));
             }
 
             LocalDateTime newAppointmentDate = parseTimeSlot(newTimeSlot);
-            //appointment.setAppointmentDate(newAppointmentDate);
-            //appointment.setStatus("Rescheduled");
             appointmentRepo.updateSlot(appointmentId, newAppointmentDate);
-            return ResponseEntity.ok(Map.of("message", "Appointment rescheduled successfully"));
+
+            // Fetch the updated appointment details
+            Appointment updatedAppointment = appointmentRepo.findById(appointmentId);
+
+            return ResponseEntity.ok(Map.of("message", "Appointment rescheduled successfully", "updatedAppointment", updatedAppointment));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Failed to reschedule appointment"));
         }
     }
+
     
     
 }

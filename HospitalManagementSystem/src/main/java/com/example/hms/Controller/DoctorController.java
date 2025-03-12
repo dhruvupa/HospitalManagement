@@ -187,6 +187,8 @@ public class DoctorController {
         }
 
         try {
+        	Doctor doctor = doctorSessionService.getLoggedInDoctor();
+        	Long doctorId = doctor.getId();
             int patientId = Integer.parseInt(requestData.get("patientId").toString()); // Ensure int usage
             int nurseId = Integer.parseInt(requestData.get("nurseId").toString()); // Ensure int usage
             String comment = requestData.get("comment").toString();
@@ -202,7 +204,7 @@ public class DoctorController {
                 Nurse nurse = nurseOpt.get();
 
                 // Store the doctor's comment in nurse_task table
-                nurseTaskRepo.createTask(nurseId, patientId, comment); // Using int values
+                nurseTaskRepo.createTask( doctorId,nurseId, patientId, comment); // Using int values
 
                 return ResponseEntity.ok(Map.of("message", "Nurse assigned and comment saved successfully!"));
             } else {

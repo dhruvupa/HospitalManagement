@@ -15,10 +15,10 @@ public class NurseTaskRepo {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public void createTask(int nurseId, int patientId, String note) {
+    public void createTask(Long doctorId,int nurseId, int patientId, String note) {
         System.out.println("Inserting Task: Nurse ID=" + nurseId + ", Patient ID=" + patientId + ", Note=" + note); // Debug log
-        String sql = "INSERT INTO nurse_task (nurse_id, patient_id, note, created_at) VALUES (?, ?, ?, NOW())";
-        jdbcTemplate.update(sql, nurseId, patientId, note);
+        String sql = "INSERT INTO doctor_notes (doctor_id ,nurse_id, patient_id, note, created_at) VALUES (?,?, ?, ?, NOW())";
+        jdbcTemplate.update(sql, doctorId, nurseId, patientId, note);
     }
 
     public List<NurseTask> getTasksByPatientId(int patientId) {
