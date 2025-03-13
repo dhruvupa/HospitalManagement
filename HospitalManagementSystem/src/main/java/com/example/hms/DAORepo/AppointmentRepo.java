@@ -21,7 +21,7 @@ public class AppointmentRepo {
     private JdbcTemplate jdbcTemplate;
 
 
-    public List<Appointment> findByPatientId(int patientId) {
+   /* public List<Appointment> findByPatientId(int patientId) {
         String sql = "SELECT a.id, a.doctor_id AS doctorId, d.first_name AS doctor_name, p.first_name AS patient_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN doctors d ON a.doctor_id = d.id " +
@@ -29,6 +29,22 @@ public class AppointmentRepo {
                 "WHERE a.patient_id = ?";
 
         return jdbcTemplate.query(sql, new Object[]{patientId}, new AppointmentRowMapper());
+    }*/
+
+    
+    public List<Appointment> findByPatientId(int patientId) {
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, d.first_name AS doctor_name, " +
+                "p.first_name AS patient_name,a.patient_id AS patientId,  a.appointment_date, a.status, " +
+                "dn.note AS doctor_note, " +
+                "n.id AS nurse_id, n.first_name AS nurse_name " +
+            "FROM appointments a " +
+            "JOIN doctors d ON a.doctor_id = d.id " +
+            "JOIN patients p ON a.patient_id = p.id " +
+            "LEFT JOIN doctor_notes dn ON a.doctor_id = dn.doctor_id AND a.patient_id = dn.patient_id " +
+            "LEFT JOIN nurses n ON dn.nurse_id = n.id " + 
+            "WHERE a.patient_id = ?";
+
+        return jdbcTemplate.query(sql, new Object[]{patientId}, new AppointmentRowMapper2());
     }
 
 
@@ -72,7 +88,7 @@ public class AppointmentRepo {
 
 
     public List<Appointment> findCurrentAppointments(Long doctorId) {
-        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name, a.patient_id AS patientId,  d.first_name AS doctor_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN patients p ON a.patient_id = p.id " +
                 "JOIN doctors d ON a.doctor_id = d.id " +
@@ -82,7 +98,7 @@ public class AppointmentRepo {
     }
 
     public List<Appointment> findPastAppointments(Long doctorId) {
-        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name,a.patient_id AS patientId, d.first_name AS doctor_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN patients p ON a.patient_id = p.id " +
                 "JOIN doctors d ON a.doctor_id = d.id " + // Add this line
@@ -92,7 +108,7 @@ public class AppointmentRepo {
     }
 
     public List<Appointment> findRejectedAppointments(Long doctorId) {
-        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name,a.patient_id AS patientId,  d.first_name AS doctor_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN patients p ON a.patient_id = p.id " +
                 "JOIN doctors d ON a.doctor_id = d.id " + // Add this line
@@ -102,7 +118,7 @@ public class AppointmentRepo {
     }
 
     public List<Appointment> findCompletedAppointments(Long doctorId) {
-        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name, d.first_name AS doctor_name, a.appointment_date, a.status " +
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, p.first_name AS patient_name, a.patient_id AS patientId,  d.first_name AS doctor_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN patients p ON a.patient_id = p.id " +
                 "JOIN doctors d ON a.doctor_id = d.id " + // Add this line
@@ -138,6 +154,23 @@ public class AppointmentRepo {
             appointment.setAppointmentDate(rs.getTimestamp("appointment_date").toLocalDateTime());
             appointment.setStatus(rs.getString("status"));
             appointment.setDoctorId(rs.getLong("doctorId"));
+            appointment.setPatientId(rs.getLong("patientId"));
+            return appointment;
+        }
+    }
+    
+    private static class AppointmentRowMapper2 implements RowMapper<Appointment> {
+        @Override
+        public Appointment mapRow(ResultSet rs, int rowNum) throws SQLException {
+            Appointment appointment = new Appointment();
+            appointment.setId(rs.getLong("id"));
+            appointment.setDoctorName(rs.getString("doctor_name")); // Correct column
+            appointment.setPatientName(rs.getString("patient_name")); // Now available
+            appointment.setAppointmentDate(rs.getTimestamp("appointment_date").toLocalDateTime());
+            appointment.setStatus(rs.getString("status"));
+            appointment.setDoctorId(rs.getLong("doctorId"));
+            appointment.setPatientId(rs.getLong("patientId"));
+            appointment.setDoctorNotes(rs.getString("doctor_note"));
             return appointment;
         }
     }

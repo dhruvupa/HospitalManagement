@@ -13,6 +13,7 @@ public class Appointment {
     private String doctorName; // Additional field for doctor's name
     private String patientName;
     private Nurse nurse;
+    private String doctorNotes;
 
     public String getDoctorComment() {
         return doctorComment;
@@ -87,5 +88,13 @@ public class Appointment {
 
     public void setPatientName(String patientName) {
         this.patientName = patientName;
+    }
+    
+    public String getDoctorNotes() {
+        return doctorNotes;
+    }
+
+    public void setDoctorNotes(String doctorNotes) {
+        this.doctorNotes = doctorNotes;
     }
 }
