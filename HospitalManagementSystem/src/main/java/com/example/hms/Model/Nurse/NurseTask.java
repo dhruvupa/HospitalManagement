@@ -8,6 +8,10 @@ public class NurseTask {
     private int patientId;
     private String note;
     private Timestamp createdAt;
+    private String doctorFirstName;
+    private String doctorLastName;
+    private String patientFirstName;
+    private String patientLastName;
 
     // Getters and Setters
     public int getId() { return id; }
@@ -23,5 +27,31 @@ public class NurseTask {
     public void setNote(String note) { this.note = note; }
 
     public Timestamp getCreatedAt() { return createdAt; }
+    
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+	
+    public String getDoctorFirstName() {
+		return doctorFirstName;
+	}
+	public void setDoctorFirstName(String doctorFirstName) {
+		this.doctorFirstName = doctorFirstName;
+	}
+	public String getDoctorLastName() {
+		return doctorLastName;
+	}
+	public void setDoctorLastName(String doctorLastName) {
+		this.doctorLastName = doctorLastName;
+	}
+	public String getPatientFirstName() {
+		return patientFirstName;
+	}
+	public void setPatientFirstName(String patientFirstName) {
+		this.patientFirstName = patientFirstName;
+	}
+	public String getPatientLastName() {
+		return patientLastName;
+	}
+	public void setPatientLastName(String patientLastName) {
+		this.patientLastName = patientLastName;
+	}
 }

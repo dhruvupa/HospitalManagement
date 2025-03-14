@@ -1,6 +1,8 @@
 package com.example.hms.DAORepo;
 
 import com.example.hms.Model.Nurse.Nurse;
+import com.example.hms.Model.Nurse.NurseTask;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -42,4 +44,41 @@ public class NurseRepo {
             return nurse;
         }
     }
+    
+    private static class NurseTaskRowMapper2 implements RowMapper<NurseTask> {
+        @Override
+        public NurseTask mapRow(ResultSet rs, int rowNum) throws SQLException {
+            NurseTask task = new NurseTask();
+            task.setId(rs.getInt("id"));
+            task.setNurseId(rs.getInt("nurse_id"));
+            task.setPatientId(rs.getInt("patient_id"));
+            task.setDoctorFirstName(rs.getString("doctor_first_name"));
+            task.setDoctorLastName(rs.getString("doctor_last_name"));
+            task.setPatientFirstName(rs.getString("patient_first_name"));
+            task.setPatientLastName(rs.getString("patient_last_name"));
+            task.setNote(rs.getString("note"));
+            task.setCreatedAt(rs.getTimestamp("created_at"));
+            return task;
+        }
+    }
+
+    public Nurse findByFirstNameAndLastName(String firstName, String lastName) {
+        String sql = "SELECT * FROM nurses WHERE first_name = ? AND last_name = ?";
+        return jdbcTemplate.queryForObject(sql, new Object[]{firstName, lastName}, new NurseRowMapper());
+    }
+    
+    public List<NurseTask> findDoctorNotesByNurseId(int nurseId) {
+    	String sql = "SELECT dn.id, dn.nurse_id, dn.patient_id, d.first_name AS doctor_first_name, " +
+                "d.last_name AS doctor_last_name, p.first_name AS patient_first_name, " +
+                "p.last_name AS patient_last_name, dn.note, dn.created_at " +
+                "FROM doctor_notes dn " +
+                "JOIN doctors d ON dn.doctor_id = d.id " +
+                "JOIN patients p ON dn.patient_id = p.id " +
+                "WHERE dn.nurse_id = ?";
+
+
+        return jdbcTemplate.query(sql, new Object[]{nurseId}, new NurseTaskRowMapper2());
+    }
+
+    
 }

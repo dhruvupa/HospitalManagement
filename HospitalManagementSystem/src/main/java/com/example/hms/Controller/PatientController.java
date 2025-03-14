@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -36,7 +35,7 @@ public class PatientController {
     private AppointmentRepo appointmentRepo;
 
     @Autowired
-    private PatientSessionService patientSessionService; // Add this
+    private PatientSessionService patientSessionService; 
 
     // Login and Registration Endpoints
     @GetMapping("/login")
