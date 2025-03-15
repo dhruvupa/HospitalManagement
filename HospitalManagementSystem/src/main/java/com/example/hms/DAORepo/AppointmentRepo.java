@@ -176,7 +176,7 @@ public class AppointmentRepo {
     }
     
     public Appointment findById(Long appointmentId) {
-        String sql = "SELECT a.id, a.doctor_id AS doctorId, d.first_name AS doctor_name, p.first_name AS patient_name, a.appointment_date, a.status " +
+        String sql = "SELECT a.id, a.doctor_id AS doctorId, a.patient_id As patientId, d.first_name AS doctor_name, p.first_name AS patient_name, a.appointment_date, a.status " +
                 "FROM appointments a " +
                 "JOIN doctors d ON a.doctor_id = d.id " +
                 "JOIN patients p ON a.patient_id = p.id " +
