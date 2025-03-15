@@ -1,5 +1,6 @@
 package com.example.hms.DAORepo;
 
+import com.example.hms.Model.Doctor.Doctor;
 import com.example.hms.Model.Nurse.Nurse;
 import com.example.hms.Model.Nurse.NurseTask;
 
@@ -78,6 +79,11 @@ public class NurseRepo {
 
 
         return jdbcTemplate.query(sql, new Object[]{nurseId}, new NurseTaskRowMapper2());
+    }
+    
+    public void save(Nurse nurse) {
+        String sql = "INSERT INTO nurses (first_name, last_name, contact_info) VALUES (?, ?, ?)";
+        jdbcTemplate.update(sql, nurse.getFirstName(), nurse.getLastName(), nurse.getContactInfo());
     }
 
     

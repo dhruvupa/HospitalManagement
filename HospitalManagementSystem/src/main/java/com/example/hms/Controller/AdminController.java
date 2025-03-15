@@ -1,62 +1,114 @@
 package com.example.hms.Controller;
+
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import com.example.hms.DAORepo.AdminRepo;
+import com.example.hms.DAORepo.DoctorRepo;
+import com.example.hms.DAORepo.LoginRequest;
+import com.example.hms.DAORepo.NurseRepo;
+import com.example.hms.Model.Admin.Admin;
+import com.example.hms.Model.Doctor.Doctor;
+import com.example.hms.Model.Nurse.Nurse;
+import com.example.hms.config.AdminSessionService;
+
+import jakarta.servlet.http.HttpSession;
+
 @Controller
-@RequestMapping("/Admin")
+@RequestMapping("/admin")
 public class AdminController {
 
-    // Patient Login Page
-    @GetMapping("/patient/login")
-    public String patientLogin() {
-        return "patientLogin";
+    @Autowired
+    private AdminRepo adminRepo;
+
+    @Autowired
+    private DoctorRepo doctorRepo;
+
+    @Autowired
+    private NurseRepo nurseRepo;
+
+    @Autowired
+    private AdminSessionService adminSessionService;
+
+    // Admin Login Endpoint
+    @PostMapping("/loginSuccess")
+    public ResponseEntity<?> handleAdminLogin(@RequestBody LoginRequest loginRequest) {
+
+        Admin admin = adminRepo.findByFirstNameAndLastName(loginRequest.getFirstName(), loginRequest.getLastName());
+
+        if (admin != null) {
+            adminSessionService.setLoggedInAdmin(admin);
+            return ResponseEntity.ok(Map.of("message", "Login successful", "admin", admin));
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid credentials"));
     }
 
-    // Doctor Login Page
-    @GetMapping("/doctor/login")
-    public String doctorLogin() {
-        return "doctor-login";
+    // Admin Logout Endpoint
+    @PostMapping("/logout")
+    public ResponseEntity<?> handleLogout(HttpSession session) {
+        session.invalidate();
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
-    // Patient Registration Page
-    @GetMapping("/patient/register")
-    public String patientRegister() {
-        return "patient-register";
+    // Add a Doctor
+    @PostMapping("/addDoctor")
+    public ResponseEntity<?> addDoctor(@RequestBody Doctor doctor, HttpSession session) {
+        Admin admin = adminSessionService.getLoggedInAdmin();
+
+        if (admin == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        doctorRepo.save(doctor);
+        return ResponseEntity.ok(Map.of("message", "Doctor added successfully", "doctor", doctor));
     }
 
-    // Doctor Registration Page
-    @GetMapping("/doctor/register")
-    public String doctorRegister() {
-        return "doctor-register";
+    // Add a Nurse
+    @PostMapping("/addNurse")
+    public ResponseEntity<?> addNurse(@RequestBody Nurse nurse, HttpSession session) {
+        Admin admin = adminSessionService.getLoggedInAdmin();
+
+        if (admin == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        nurseRepo.save(nurse);
+        return ResponseEntity.ok(Map.of("message", "Nurse added successfully", "nurse", nurse));
     }
 
-    // Handle Patient Login Form Submission
-    @PostMapping("/patient/login")
-    public String handlePatientLogin(String username, String password) {
-        // Add logic to authenticate patient
-        return "redirect:/patient/dashboard"; // Redirect to patient dashboard
+    // Get List of All Doctors
+    @GetMapping("/listDoctors")
+    public ResponseEntity<?> listDoctors(HttpSession session) {
+        Admin admin = adminSessionService.getLoggedInAdmin();
+
+        if (admin == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        List<Doctor> doctors = doctorRepo.findAll();
+        return ResponseEntity.ok(doctors);
     }
 
-    // Handle Doctor Login Form Submission
-    @PostMapping("/doctor/login")
-    public String handleDoctorLogin(String username, String password) {
-        // Add logic to authenticate doctor
-        return "redirect:/doctor/dashboard"; // Redirect to doctor dashboard
-    }
+    // Get List of All Nurses
+    @GetMapping("/listNurses")
+    public ResponseEntity<?> listNurses(HttpSession session) {
+        Admin admin = adminSessionService.getLoggedInAdmin();
 
-    // Handle Patient Registration Form Submission
-    @PostMapping("/patient/register")
-    public String handlePatientRegistration(String username, String email, String password, String dob) {
-        // Add logic to register patient
-        return "redirect:/auth/patient/login"; // Redirect to patient login page
-    }
+        if (admin == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
 
-    // Handle Doctor Registration Form Submission
-    @PostMapping("/doctor/register")
-    public String handleDoctorRegistration(String username, String email, String password, String specialization) {
-        // Add logic to register doctor
-        return "redirect:/auth/doctor/login"; // Redirect to doctor login page
+        List<Nurse> nurses = nurseRepo.findAll();
+        return ResponseEntity.ok(nurses);
     }
 }
